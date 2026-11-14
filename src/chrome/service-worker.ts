@@ -89,7 +89,7 @@ function resolveBundleUrl(releases: Release[], config: WebExtConfig): string | n
 
 // --- Message handler ---
 
-chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
   if (message.type === "FETCH_BUNDLE") {
     (async () => {
       try {
@@ -116,6 +116,37 @@ chrome.runtime.onMessage.addListener((message: any, _sender, sendResponse) => {
     })();
     return true; // keep message channel open for async response
   }
+
+  // Inject the bundle source into the page's main world, bypassing page CSP.
+  // chrome.scripting.executeScript with world:"MAIN" runs outside the page's CSP.
+  if (message.type === "INJECT_BUNDLE") {
+    (async () => {
+      try {
+        const tabId = sender.tab?.id;
+        if (!tabId) {
+          sendResponse({ error: "No tab ID available" });
+          return;
+        }
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          world: "MAIN",
+          injectImmediately: true,
+          func: (code: string) => {
+            const el = document.createElement("script");
+            el.textContent = code;
+            document.head.appendChild(el);
+            el.remove();
+          },
+          args: [message.source],
+        });
+        sendResponse({ ok: true });
+      } catch (err: any) {
+        sendResponse({ error: err.message || String(err) });
+      }
+    })();
+    return true; // keep message channel open for async response
+  }
+
   return false;
 });
 
