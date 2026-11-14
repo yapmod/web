@@ -17,7 +17,7 @@ interface CachedReleases {
   releases: Release[];
 }
 
-function getCachedReleases(): Release[] | null {
+export function getCachedReleases(): Release[] | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;

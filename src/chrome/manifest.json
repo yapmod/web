@@ -14,5 +14,9 @@
     }
   ],
   "permissions": [],
-  "host_permissions": ["https://api.github.com/", "https://raw.githubusercontent.com/"]
+  "host_permissions": [
+    "https://api.github.com/",
+    "https://raw.githubusercontent.com/",
+    "https://github.com/"
+  ]
 }

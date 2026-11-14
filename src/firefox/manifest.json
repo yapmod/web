@@ -14,5 +14,9 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["https://api.github.com/", "https://raw.githubusercontent.com/"]
+  "permissions": [
+    "https://api.github.com/",
+    "https://raw.githubusercontent.com/",
+    "https://github.com/"
+  ]
 }

@@ -6,7 +6,7 @@
 // for reactive UI, and createComponent(Dynamic) for element creation
 // without JSX transform.
 
-import { readConfig, writeConfig, getReleaseList } from "./releases.js";
+import { readConfig, writeConfig, getCachedReleases } from "./releases.js";
 
 /**
  * Creates the plugin definition for registerClientPlugin().
@@ -26,11 +26,8 @@ export function createWebExtPlugin() {
       // Read initial config
       let config = readConfig();
 
-      // Fetch releases list for the dropdown
-      let releases: { tagName: string; prerelease: boolean }[] = [];
-      getReleaseList(config).then((list) => {
-        releases = list;
-      });
+      // Read releases from localStorage cache (populated by content script)
+      let releases = getCachedReleases() || [];
 
       // Helper: create a Solid element using Dynamic component
       const el = (tag: string, props: Record<string, any> | null, ...children: any[]) => {
@@ -53,11 +50,9 @@ export function createWebExtPlugin() {
           const version = api.storage.version || "latest";
           const includePrereleases = api.storage.includePrereleases || false;
 
-          // Fetch releases when the section opens
+          // Re-read cached releases when the section opens
           solid.createEffect(() => {
-            getReleaseList({ version: "latest", includePrereleases }).then((list) => {
-              releases = list;
-            });
+            releases = getCachedReleases() || [];
           });
 
           const handleVersionChange = (e: Event) => {
@@ -77,10 +72,8 @@ export function createWebExtPlugin() {
             api.storage.includePrereleases = newIncludePrereleases;
             api.flushStorage();
 
-            // Refresh release list when toggle changes
-            getReleaseList(config).then((list) => {
-              releases = list;
-            });
+            // Refresh release list from cache when toggle changes
+            releases = getCachedReleases() || [];
           };
 
           // Sync storage with localStorage config on mount
