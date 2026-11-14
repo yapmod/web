@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+  "name": "Yapmod Web",
+  "version": "1.0.0",
+  "description": "Automatically injects the Yapmod client bundle into Yapin",
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.yapin.gg/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": ["https://raw.githubusercontent.com/"]
+}

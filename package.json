@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsup --watch",
-    "build": "tsup",
+    "build": "tsup && cp src/chrome/manifest.json dist/chrome/ && cp src/firefox/manifest.json dist/firefox/",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
     "format": "oxfmt src/",
