@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Yapmod Web",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Automatically injects the Yapmod client bundle into Yapin",
   "background": {
     "service_worker": "service-worker.js"
