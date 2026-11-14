@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Yapmod Web",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Automatically injects the Yapmod client bundle into Yapin",
   "background": {
     "service_worker": "service-worker.js"
@@ -13,8 +13,9 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "scripting", "*://*.yapin.gg/*"],
+  "permissions": ["storage", "scripting"],
   "host_permissions": [
+    "*://*.yapin.gg/*",
     "https://api.github.com/",
     "https://raw.githubusercontent.com/",
     "https://github.com/",
