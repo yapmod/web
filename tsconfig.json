@@ -16,6 +16,8 @@
     "noUnusedParameters": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
     "types": ["chrome"]
   },
   "include": ["src"]

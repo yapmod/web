@@ -3,10 +3,16 @@
 // in the content script's page context.
 // Uses direct GitHub release download URLs instead of the GitHub API,
 // eliminating the need for caching and avoiding API rate limits.
+//
+// After injecting the Yapmod bundle, it also injects the plugin registration
+// script so the web extension config plugin is registered with YapmodClient.
 
 const GITHUB_BASE = "https://github.com/yapmod/client";
-const GITHUB_API_RELEASES_URL =
-  "https://api.github.com/repos/yapmod/client/releases?per_page=100";
+const GITHUB_API_RELEASES_URL = "https://api.github.com/repos/yapmod/client/releases?per_page=100";
+
+// Plugin registration source is embedded at build time by tsup.
+// The content script requests it via GET_PLUGIN_SOURCE.
+const PLUGIN_REGISTER_SOURCE = ""; // populated by build-time concatenation
 
 interface WebExtConfig {
   version: string;
@@ -116,6 +122,13 @@ chrome.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
       }
     })();
     return true; // keep message channel open for async response
+  }
+
+  // Return the plugin registration script source so the content script
+  // can ask the service worker to inject it after the Yapmod bundle loads.
+  if (message.type === "GET_PLUGIN_SOURCE") {
+    sendResponse({ source: PLUGIN_REGISTER_SOURCE });
+    return false;
   }
 
   return false;
