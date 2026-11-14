@@ -3,7 +3,8 @@
 //
 // Registered via globalThis.YapmodClient.registerClientPlugin() after
 // the Yapmod bundle loads. Uses the shared Solid instance (api.solid)
-// for reactive UI.
+// for reactive UI, and createComponent(Dynamic) for element creation
+// without JSX transform.
 
 import { readConfig, writeConfig, getReleaseList } from "./releases.js";
 
@@ -20,7 +21,7 @@ export function createWebExtPlugin() {
       description: "Configure which Yapmod client version to install",
     },
     setup(api: any) {
-      const { solid } = api;
+      const { solid, solidWeb } = api;
 
       // Read initial config
       let config = readConfig();
@@ -30,6 +31,18 @@ export function createWebExtPlugin() {
       getReleaseList(config).then((list) => {
         releases = list;
       });
+
+      // Helper: create a Solid element using Dynamic component
+      const el = (tag: string, props: Record<string, any> | null, ...children: any[]) => {
+        const p: Record<string, any> = props ? { ...props } : {};
+        if (children.length > 0) {
+          p.children = children.length === 1 ? children[0] : children;
+        }
+        return solidWeb.createComponent(solidWeb.Dynamic, {
+          component: tag,
+          ...p,
+        });
+      };
 
       // Register settings section
       api.settings.registerSection({
@@ -76,20 +89,20 @@ export function createWebExtPlugin() {
             api.storage.includePrereleases = config.includePrereleases;
           });
 
-          return solid.jsx(
+          return el(
             "div",
             { style: "display: flex; flex-direction: column; gap: 16px;" },
-            solid.jsx(
+            el(
               "div",
               null,
-              solid.jsx(
+              el(
                 "label",
                 {
                   style: "display: block; font-weight: 600; margin-bottom: 4px;",
                 },
                 "Version",
               ),
-              solid.jsx(
+              el(
                 "select",
                 {
                   value: version,
@@ -98,9 +111,9 @@ export function createWebExtPlugin() {
                     "width: 100%; padding: 8px; border-radius: 4px; " +
                     "border: 1px solid #ccc; background: #fff;",
                 },
-                solid.jsx("option", { value: "latest" }, "Latest stable"),
+                el("option", { value: "latest" }, "Latest stable"),
                 ...releases.map((r) =>
-                  solid.jsx(
+                  el(
                     "option",
                     { value: r.tagName },
                     `${r.tagName}${r.prerelease ? " (pre-release)" : ""}`,
@@ -108,15 +121,15 @@ export function createWebExtPlugin() {
                 ),
               ),
             ),
-            solid.jsx(
+            el(
               "div",
               null,
-              solid.jsx(
+              el(
                 "label",
                 {
                   style: "display: flex; align-items: center; gap: 8px; cursor: pointer;",
                 },
-                solid.jsx("input", {
+                el("input", {
                   type: "checkbox",
                   checked: includePrereleases,
                   onChange: handlePrereleaseChange,
@@ -124,7 +137,7 @@ export function createWebExtPlugin() {
                 "Include pre-releases",
               ),
             ),
-            solid.jsx(
+            el(
               "p",
               {
                 style: "font-size: 12px; color: #888; margin: 0;",

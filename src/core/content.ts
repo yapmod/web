@@ -18,7 +18,7 @@ async function loadBundle() {
       throw new Error(`HTTP ${response.status}`);
     }
     const source = await response.text();
-    injectBundle(source);
+    await injectBundle(source);
     console.log("[yapmod-web] Bundle injected successfully");
 
     // Register the web-ext-plugin after Yapmod boots
