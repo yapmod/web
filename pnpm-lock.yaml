@@ -24,8 +24,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.2
       '@yapmod/builder':
-        specifier: file:../client/packages/builder
-        version: file:../client/packages/builder
+        specifier: ^1.2.1
+        version: 1.2.1
       babel-preset-solid:
         specifier: ^1.8.4
         version: 1.9.19(@babel/core@7.29.13)(solid-js@1.9.19)
@@ -953,8 +953,8 @@ packages:
     resolution: {integrity: sha512-mbCddXd+jm7hfx7w2YU64/Av4/NqqeG3GoRZgxPcgoTxYjhrcfJRw9ULch71SS4G+Q3bOXFhRvPqjguN0Hyp5w==}
     hasBin: true
 
-  '@yapmod/builder@file:../client/packages/builder':
-    resolution: {directory: ../client/packages/builder, type: directory}
+  '@yapmod/builder@1.2.1':
+    resolution: {integrity: sha512-nELCr+z9/OD6UlbJ0iSUc9LaCSJGGzxTiT7xW8kFvWXEe46Pc0+rcjqZ7k3Msmr/2JOXuJPEsmKNQVZ+mcBcvg==}
     hasBin: true
 
   acorn@8.19.0:
@@ -1899,7 +1899,7 @@ snapshots:
     dependencies:
       '@typescript/old': typescript@6.0.3
 
-  '@yapmod/builder@file:../client/packages/builder':
+  '@yapmod/builder@1.2.1':
     dependencies:
       '@babel/core': 7.29.13
       '@babel/preset-typescript': 7.29.7(@babel/core@7.29.13)

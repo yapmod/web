@@ -3,3 +3,6 @@ packages:
 
 allowBuilds:
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@yapmod/builder@1.2.1'
