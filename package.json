@@ -8,12 +8,15 @@
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
-    "format": "oxfmt src/"
+    "format": "oxfmt src/",
+    "format:check": "oxfmt src/ --check"
   },
   "devDependencies": {
     "@types/chrome": "^0.3.7",
     "@types/node": "^26.0.0",
     "@typescript/typescript6": "^6.0.0",
+    "oxfmt": "^0.25.0",
+    "oxlint": "^1.16.0",
     "tsup": "^8.0.0",
     "typescript": "^7.0.2"
   }
