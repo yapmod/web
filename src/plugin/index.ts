@@ -6,7 +6,7 @@
 // for reactive UI, and createComponent(Dynamic) for element creation
 // without JSX transform.
 
-import { readConfig, writeConfig, getCachedReleases } from "./releases.js";
+import { readConfig, writeConfig } from "./releases.js";
 
 /**
  * Creates the plugin definition for registerClientPlugin().
@@ -26,8 +26,9 @@ export function createWebExtPlugin() {
       // Read initial config
       let config = readConfig();
 
-      // Read releases from localStorage cache (populated by content script)
-      let releases = getCachedReleases() || [];
+      // Release list is no longer cached locally; the version dropdown
+      // only shows "Latest stable". A specific version can be set manually
+      // in localStorage if needed.
 
       // Helper: create a Solid element using Dynamic component
       const el = (tag: string, props: Record<string, any> | null, ...children: any[]) => {
@@ -50,10 +51,7 @@ export function createWebExtPlugin() {
           const version = api.storage.version || "latest";
           const includePrereleases = api.storage.includePrereleases || false;
 
-          // Re-read cached releases when the section opens
-          solid.createEffect(() => {
-            releases = getCachedReleases() || [];
-          });
+          // (No cached releases list anymore; version dropdown is simplified)
 
           const handleVersionChange = (e: Event) => {
             const target = e.target as HTMLSelectElement;
@@ -72,8 +70,7 @@ export function createWebExtPlugin() {
             api.storage.includePrereleases = newIncludePrereleases;
             api.flushStorage();
 
-            // Refresh release list from cache when toggle changes
-            releases = getCachedReleases() || [];
+            // (No cached releases list anymore)
           };
 
           // Sync storage with localStorage config on mount
@@ -105,13 +102,6 @@ export function createWebExtPlugin() {
                     "border: 1px solid #ccc; background: #fff;",
                 },
                 el("option", { value: "latest" }, "Latest stable"),
-                ...releases.map((r) =>
-                  el(
-                    "option",
-                    { value: r.tagName },
-                    `${r.tagName}${r.prerelease ? " (pre-release)" : ""}`,
-                  ),
-                ),
               ),
             ),
             el(

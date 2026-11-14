@@ -1,38 +1,6 @@
-// Shared config and cache helpers for the web extension.
-// The service worker handles all network requests (GitHub API + bundle download).
-// This module only provides localStorage-based config read/write and cache access.
-
-const CACHE_KEY = "yapmod.releases.cache.v1";
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
-
-export interface Release {
-  tagName: string;
-  prerelease: boolean;
-  assetUrl: string | null;
-}
-
-interface CachedReleases {
-  timestamp: number;
-  releases: Release[];
-}
-
-/**
- * Read cached releases from localStorage. Returns null if not cached or expired.
- * The service worker populates this cache when fetching from the GitHub API.
- */
-export function getCachedReleases(): Release[] | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const cached: CachedReleases = JSON.parse(raw);
-    if (Date.now() - cached.timestamp > CACHE_TTL) {
-      return null;
-    }
-    return cached.releases;
-  } catch {
-    return null;
-  }
-}
+// Shared config helpers for the web extension.
+// The service worker handles all network requests using direct GitHub release
+// download URLs, so no caching is needed for the common case.
 
 export interface WebExtConfig {
   version: string; // "latest" or specific tag like "v1.0.0"
