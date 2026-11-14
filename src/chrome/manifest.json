@@ -13,7 +13,7 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": [],
+  "permissions": ["storage"],
   "host_permissions": [
     "https://api.github.com/",
     "https://raw.githubusercontent.com/",

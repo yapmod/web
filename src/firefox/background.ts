@@ -23,33 +23,35 @@ interface WebExtConfig {
   includePrereleases: boolean;
 }
 
-// --- Cached releases storage (localStorage shared with content script) ---
+// --- Cached releases storage via browser.storage.local ---
+// Background scripts cannot use localStorage.
 
-function getCachedReleases(): Release[] | null {
+async function getCachedReleases(): Promise<Release[] | null> {
   try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const cached: CachedReleases = JSON.parse(raw);
-    if (Date.now() - cached.timestamp > CACHE_TTL) {
+    const result = await browser.storage.local.get(CACHE_KEY);
+    const cached = result[CACHE_KEY];
+    if (!cached) return null;
+    const parsed: CachedReleases = cached as CachedReleases;
+    if (Date.now() - parsed.timestamp > CACHE_TTL) {
       return null;
     }
-    return cached.releases;
+    return parsed.releases;
   } catch {
     return null;
   }
 }
 
-function setCachedReleases(releases: Release[]) {
+async function setCachedReleases(releases: Release[]) {
   try {
     const cached: CachedReleases = { timestamp: Date.now(), releases };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
+    await browser.storage.local.set({ [CACHE_KEY]: cached });
   } catch {
     // Ignore quota errors
   }
 }
 
 async function fetchReleases(): Promise<Release[]> {
-  const cached = getCachedReleases();
+  const cached = await getCachedReleases();
   if (cached) return cached;
 
   const response = await fetch(GITHUB_RELEASES_URL);
@@ -65,7 +67,7 @@ async function fetchReleases(): Promise<Release[]> {
       assetUrl: asset?.browser_download_url || null,
     };
   });
-  setCachedReleases(releases);
+  await setCachedReleases(releases);
   return releases;
 }
 

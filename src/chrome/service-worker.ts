@@ -23,33 +23,42 @@ interface WebExtConfig {
   includePrereleases: boolean;
 }
 
-// --- Cached releases storage (localStorage shared with content script) ---
+// --- Cached releases storage via chrome.storage.local ---
+// Service workers in Manifest V3 cannot use localStorage.
 
-function getCachedReleases(): Release[] | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const cached: CachedReleases = JSON.parse(raw);
-    if (Date.now() - cached.timestamp > CACHE_TTL) {
-      return null;
-    }
-    return cached.releases;
-  } catch {
-    return null;
-  }
+function getCachedReleases(): Promise<Release[] | null> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(CACHE_KEY, (result) => {
+      if (chrome.runtime.lastError) {
+        resolve(null);
+        return;
+      }
+      const cached = result[CACHE_KEY];
+      if (!cached) {
+        resolve(null);
+        return;
+      }
+      const parsed: CachedReleases = cached as CachedReleases;
+      if (Date.now() - parsed.timestamp > CACHE_TTL) {
+        resolve(null);
+        return;
+      }
+      resolve(parsed.releases);
+    });
+  });
 }
 
-function setCachedReleases(releases: Release[]) {
-  try {
+function setCachedReleases(releases: Release[]): Promise<void> {
+  return new Promise((resolve) => {
     const cached: CachedReleases = { timestamp: Date.now(), releases };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
-  } catch {
-    // Ignore quota errors
-  }
+    chrome.storage.local.set({ [CACHE_KEY]: cached }, () => {
+      resolve();
+    });
+  });
 }
 
 async function fetchReleases(): Promise<Release[]> {
-  const cached = getCachedReleases();
+  const cached = await getCachedReleases();
   if (cached) return cached;
 
   const response = await fetch(GITHUB_RELEASES_URL);
@@ -65,7 +74,7 @@ async function fetchReleases(): Promise<Release[]> {
       assetUrl: asset?.browser_download_url || null,
     };
   });
-  setCachedReleases(releases);
+  await setCachedReleases(releases);
   return releases;
 }
 
