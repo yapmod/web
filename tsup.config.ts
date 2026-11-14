@@ -1,97 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { transformSync } from '@babel/core';
-import presetSolid from 'babel-preset-solid';
-import presetTypescript from '@babel/preset-typescript';
-import type { PluginObj } from '@babel/core';
-import { types as t } from '@babel/core';
 import { defineConfig } from 'tsup';
-
-/*
- * Babel plugin that rewrites solid-js imports onto the shared yapmod
- * instance so the bundle never carries a second copy of Solid.
- * Mirrors the logic in @yapmod/builder's transform.ts.
- */
-const SHARED_MODULES: Record<string, string> = {
-  'solid-js': 'solid',
-  'solid-js/web': 'solidWeb',
-  'solid-js/store': 'solidStore',
-};
-
-function sharedAccess(namespace: string) {
-  return t.memberExpression(t.identifier('yapmod'), t.identifier(namespace));
-}
-
-function rewriteSharedImports(): PluginObj {
-  return {
-    name: 'yapmod:rewrite-shared-imports',
-    visitor: {
-      ImportDeclaration(path) {
-        const namespace = SHARED_MODULES[path.node.source.value];
-        if (namespace === undefined) return;
-
-        if (path.node.importKind === 'type') {
-          path.remove();
-          return;
-        }
-
-        const statements = [];
-        const named = [];
-
-        for (const specifier of path.node.specifiers) {
-          if (t.isImportNamespaceSpecifier(specifier)) {
-            statements.push(
-              t.variableDeclaration('const', [
-                t.variableDeclarator(specifier.local, sharedAccess(namespace)),
-              ]),
-            );
-            continue;
-          }
-          if (t.isImportDefaultSpecifier(specifier)) {
-            statements.push(
-              t.variableDeclaration('const', [
-                t.variableDeclarator(
-                  specifier.local,
-                  t.memberExpression(sharedAccess(namespace), t.identifier('default')),
-                ),
-              ]),
-            );
-            continue;
-          }
-          if (specifier.importKind === 'type') continue;
-          named.push(specifier);
-        }
-
-        if (named.length > 0) {
-          const properties = [];
-          for (const specifier of named) {
-            const key = t.isIdentifier(specifier.imported)
-              ? specifier.imported
-              : t.stringLiteral(specifier.imported.value);
-            properties.push(t.objectProperty(key, specifier.local));
-          }
-          statements.push(
-            t.variableDeclaration('const', [
-              t.variableDeclarator(t.objectPattern(properties), sharedAccess(namespace)),
-            ]),
-          );
-        }
-
-        if (statements.length === 0) {
-          path.remove();
-          return;
-        }
-        path.replaceWithMultiple(statements);
-      },
-    },
-  };
-}
+import { getBabelPresets, getSharedImportsPlugin } from '@yapmod/builder/transform';
 
 /**
  * tsup/esbuild plugin that runs the @yapmod/builder transform pipeline
- * on source files so SolidJS JSX is compiled and solid-js imports are
- * rewritten to use the shared yapmod instance.
+ * on source files so SolidJS JSX is compiled and solid-js / @yapmod/ui
+ * imports are rewritten to use the shared YapmodClient instance.
  */
 function solidTransformPlugin() {
+  const babelPlugin = getSharedImportsPlugin();
+  const presets = getBabelPresets();
+
   return {
     name: 'yapmod:solid-transform',
     setup(build: any) {
@@ -105,7 +25,7 @@ function solidTransformPlugin() {
           filename: args.path,
           babelrc: false,
           configFile: false,
-          presets: [presetSolid, presetTypescript],
+          presets,
           sourceType: 'module',
           ast: false,
           cloneInputAst: false,
@@ -113,20 +33,24 @@ function solidTransformPlugin() {
 
         if (!first?.code) return undefined;
 
-        // Pass 2: rewrite solid-js imports to yapmod.solid...
+        // Pass 2: rewrite solid-js and @yapmod/ui imports to yapmod.<ns>
         const second = transformSync(first.code, {
           filename: args.path,
           babelrc: false,
           configFile: false,
-          plugins: [rewriteSharedImports()],
+          plugins: [babelPlugin],
           sourceType: 'module',
           ast: false,
         });
 
         if (!second?.code) return undefined;
 
+        // Pass 3: rewrite `yapmod.<ns>` to `globalThis.YapmodClient.<ns>`
+        // so the web extension's IIFE bundle accesses the client runtime.
+        const third = second.code.replace(/yapmod\./g, 'globalThis.YapmodClient.');
+
         return {
-          contents: second.code,
+          contents: third,
           loader: 'js' as const,
         };
       });
