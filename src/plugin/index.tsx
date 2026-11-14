@@ -24,8 +24,17 @@ export function createWebExtPlugin() {
       description: "Configure the Yapmod web extension behavior",
     },
     setup(api: any) {
-      // Read initial config
-      let config: WebExtConfig = readConfig();
+      // Read initial config and sync to plugin storage outside any reactive
+      // context so the signal-based storage proxy doesn't create a circular
+      // dependency when the render function reads those same properties.
+      const config: WebExtConfig = readConfig();
+      api.storage.version = config.version;
+      api.storage.includePrereleases = config.includePrereleases;
+      api.storage.verboseLogging = config.verboseLogging;
+      api.storage.autoStart = config.autoStart;
+      api.storage.injectionDelay = config.injectionDelay;
+      api.storage.allowedHosts = config.allowedHosts;
+      api.flushStorage();
 
       // Shared styles
       const inputStyle =
@@ -50,32 +59,28 @@ export function createWebExtPlugin() {
 
           const handleVersionChange = (e: Event) => {
             const target = e.target as HTMLSelectElement;
-            config = { ...config, version: target.value };
-            writeConfig(config);
+            writeConfig({ version: target.value, includePrereleases: config.includePrereleases, verboseLogging: config.verboseLogging, autoStart: config.autoStart, injectionDelay: config.injectionDelay, allowedHosts: config.allowedHosts });
             api.storage.version = target.value;
             api.flushStorage();
           };
 
           const handlePrereleaseChange = (e: Event) => {
             const target = e.target as HTMLInputElement;
-            config = { ...config, includePrereleases: target.checked };
-            writeConfig(config);
+            writeConfig({ ...config, includePrereleases: target.checked });
             api.storage.includePrereleases = target.checked;
             api.flushStorage();
           };
 
           const handleVerboseChange = (e: Event) => {
             const target = e.target as HTMLInputElement;
-            config = { ...config, verboseLogging: target.checked };
-            writeConfig(config);
+            writeConfig({ ...config, verboseLogging: target.checked });
             api.storage.verboseLogging = target.checked;
             api.flushStorage();
           };
 
           const handleAutoStartChange = (e: Event) => {
             const target = e.target as HTMLInputElement;
-            config = { ...config, autoStart: target.checked };
-            writeConfig(config);
+            writeConfig({ ...config, autoStart: target.checked });
             api.storage.autoStart = target.checked;
             api.flushStorage();
           };
@@ -84,29 +89,17 @@ export function createWebExtPlugin() {
             const target = e.target as HTMLInputElement;
             const val = parseInt(target.value, 10);
             const delay = isNaN(val) ? 0 : Math.max(0, val);
-            config = { ...config, injectionDelay: delay };
-            writeConfig(config);
+            writeConfig({ ...config, injectionDelay: delay });
             api.storage.injectionDelay = delay;
             api.flushStorage();
           };
 
           const handleHostsChange = (e: Event) => {
             const target = e.target as HTMLInputElement;
-            config = { ...config, allowedHosts: target.value };
-            writeConfig(config);
+            writeConfig({ ...config, allowedHosts: target.value });
             api.storage.allowedHosts = target.value;
             api.flushStorage();
           };
-
-          // Sync storage with localStorage config on mount
-          api.solid.createEffect(() => {
-            api.storage.version = config.version;
-            api.storage.includePrereleases = config.includePrereleases;
-            api.storage.verboseLogging = config.verboseLogging;
-            api.storage.autoStart = config.autoStart;
-            api.storage.injectionDelay = config.injectionDelay;
-            api.storage.allowedHosts = config.allowedHosts;
-          });
 
           return (
             <div style="display: flex; flex-direction: column; gap: 16px;">
