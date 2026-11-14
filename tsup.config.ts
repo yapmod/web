@@ -45,9 +45,15 @@ function solidTransformPlugin() {
 
         if (!second?.code) return undefined;
 
-        // Pass 3: rewrite `yapmod.<ns>` to `globalThis.YapmodClient.<ns>`
-        // so the web extension's IIFE bundle accesses the client runtime.
-        const third = second.code.replace(/yapmod\./g, 'globalThis.YapmodClient.');
+        // Pass 3: rewrite `yapmod.<ns>` to `globalThis.YapmodClient.api.<ns>`
+        // so the web extension's IIFE bundle accesses the shared SolidJS
+        // instances exposed on the YapmodClient handle's `api` property.
+        // Only match `yapmod.` as a code identifier (not inside string literals)
+        // by requiring a word boundary or non-string context before it.
+        const third = second.code.replace(
+          /(?<![\\"])yapmod\./g,
+          'globalThis.YapmodClient.api.',
+        );
 
         return {
           contents: third,
