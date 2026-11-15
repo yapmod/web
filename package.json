@@ -20,6 +20,7 @@
     "@types/node": "^26.0.0",
     "@typescript/typescript6": "^6.0.0",
     "@yapmod/builder": "^1.2.1",
+    "@yapmod/types": "^1.0.2",
     "babel-preset-solid": "^1.8.4",
     "changelogen": "^0.6.2",
     "oxfmt": "^0.25.0",
