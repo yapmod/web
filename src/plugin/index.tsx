@@ -36,19 +36,17 @@ export function createWebExtPlugin() {
       api.storage.allowedHosts = config.allowedHosts;
       api.flushStorage();
 
-      // Shared styles
-      const inputStyle =
-        "width: 100%; padding: 8px; border-radius: 4px; " +
-        "border: 1px solid #ccc; background: #fff; box-sizing: border-box;";
-      const labelStyle = "display: block; font-weight: 600; margin-bottom: 4px;";
-      const hintStyle = "font-size: 12px; color: #888; margin: 0; margin-top: 2px;";
-      const checkboxLabelStyle = "display: flex; align-items: center; gap: 8px; cursor: pointer;";
-
-      // Register settings section
+      // Register settings section with settings icon
       api.settings.registerSection({
         id: "web-ext-config",
         label: "Extension",
+        icon: "settings",
         render(): JSX.Element {
+          const Switch = api.ui.Switch;
+          const Input = api.ui.Input;
+          const Select = api.ui.Select;
+          const Hint = api.ui.Hint;
+
           // Re-read config reactively via storage
           const version = api.storage.version || "latest";
           const includePrereleases = api.storage.includePrereleases || false;
@@ -101,90 +99,39 @@ export function createWebExtPlugin() {
             api.flushStorage();
           };
 
+          const sectionStyle = "border-top: 1px solid var(--yp-border, #ffffff12); padding-top: 8px;";
+          const headingStyle = "margin: 0 0 8px; font-size: 14px;";
+
           return (
             <div style="display: flex; flex-direction: column; gap: 16px;">
               {/* --- Version section --- */}
-              <div>
-                <label style={labelStyle}>Version</label>
-                <select value={version} onChange={handleVersionChange} style={inputStyle}>
-                  <option value="latest">Latest stable</option>
-                </select>
-              </div>
-              <div>
-                <label style={checkboxLabelStyle}>
-                  <input
-                    type="checkbox"
-                    checked={includePrereleases}
-                    onChange={handlePrereleaseChange}
-                  />
-                  Include pre-releases
-                </label>
-              </div>
+              <Select label="Version" value={version} onChange={handleVersionChange}>
+                <option value="latest">Latest stable</option>
+              </Select>
+              <Switch row label="Include pre-releases" checked={includePrereleases} onChange={handlePrereleaseChange} />
 
               {/* --- Behavior section --- */}
-              <div style="border-top: 1px solid #eee; padding-top: 8px;">
-                <h3 style="margin: 0 0 8px; font-size: 14px;">Behavior</h3>
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>Behavior</h3>
                 <div style="display: flex; flex-direction: column; gap: 12px;">
-                  <div>
-                    <label style={checkboxLabelStyle}>
-                      <input type="checkbox" checked={autoStart} onChange={handleAutoStartChange} />
-                      Auto-start Yapmod
-                    </label>
-                    <p style={hintStyle}>Inject Yapmod automatically on matching pages.</p>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Injection delay (ms)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={injectionDelay}
-                      onChange={handleDelayChange}
-                      style={inputStyle}
-                    />
-                    <p style={hintStyle}>
-                      Delay before injection, useful for debugging race conditions.
-                    </p>
-                  </div>
+                  <Switch row label="Auto-start Yapmod" hint="Inject Yapmod automatically on matching pages." checked={autoStart} onChange={handleAutoStartChange} />
+                  <Input label="Injection delay (ms)" type="number" min="0" value={injectionDelay} onChange={handleDelayChange} hint="Delay before injection, useful for debugging race conditions." />
                 </div>
               </div>
 
               {/* --- Debugging section --- */}
-              <div style="border-top: 1px solid #eee; padding-top: 8px;">
-                <h3 style="margin: 0 0 8px; font-size: 14px;">Debugging</h3>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  <div>
-                    <label style={checkboxLabelStyle}>
-                      <input
-                        type="checkbox"
-                        checked={verboseLogging}
-                        onChange={handleVerboseChange}
-                      />
-                      Verbose logging
-                    </label>
-                    <p style={hintStyle}>Enable detailed console output for troubleshooting.</p>
-                  </div>
-                </div>
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>Debugging</h3>
+                <Switch row label="Verbose logging" hint="Enable detailed console output for troubleshooting." checked={verboseLogging} onChange={handleVerboseChange} />
               </div>
 
               {/* --- Hosts section --- */}
-              <div style="border-top: 1px solid #eee; padding-top: 8px;">
-                <h3 style="margin: 0 0 8px; font-size: 14px;">Hosts</h3>
-                <div>
-                  <label style={labelStyle}>Additional allowed hosts</label>
-                  <input
-                    type="text"
-                    placeholder="localhost:3000, 127.0.0.1:8080"
-                    value={allowedHosts}
-                    onChange={handleHostsChange}
-                    style={inputStyle}
-                  />
-                  <p style={hintStyle}>
-                    Comma-separated list of extra hosts where Yapmod should inject.
-                  </p>
-                </div>
+              <div style={sectionStyle}>
+                <h3 style={headingStyle}>Hosts</h3>
+                <Input label="Additional allowed hosts" placeholder="localhost:3000, 127.0.0.1:8080" value={allowedHosts} onChange={handleHostsChange} hint="Comma-separated list of extra hosts where Yapmod should inject." />
               </div>
 
-              <p style={hintStyle}>Changes take effect on the next page reload.</p>
+              <Hint>Changes take effect on the next page reload.</Hint>
             </div>
           );
         },
