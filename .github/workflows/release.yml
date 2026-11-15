@@ -77,12 +77,14 @@ jobs:
           jq --arg v "$NEW_VERSION" '.version = $v' src/chrome/manifest.json > tmp.json && mv tmp.json src/chrome/manifest.json
           jq --arg v "$NEW_VERSION" '.version = $v' src/firefox/manifest.json > tmp.json && mv tmp.json src/firefox/manifest.json
 
-          # Configure git and commit
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add src/chrome/manifest.json src/firefox/manifest.json
-          git commit -m "chore: bump version to ${NEW_VERSION}"
-          git push origin main
+          # Configure git and commit only if version actually changed
+          if [ "$CURRENT" != "$NEW_VERSION" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email 'github-actions[bot]@users.noreply.github.com'
+            git add src/chrome/manifest.json src/firefox/manifest.json
+            git commit -m "chore: bump version to ${NEW_VERSION}"
+            git push origin main
+          fi
           git tag "v${NEW_VERSION}"
           git push origin "v${NEW_VERSION}"
 
