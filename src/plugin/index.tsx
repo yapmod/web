@@ -8,16 +8,32 @@
 
 import type { JSX } from "solid-js";
 import {Select, Hint, SettingsPage, Section, SettingRow} from "@yapmod/ui"
-import type { YapmodPluginApi } from "./yapmod-types.js";
+import type { YapmodPluginApi, PluginManifest, PluginFunction } from "@yapmod/types";
 import type { WebExtConfig } from "./releases.js";
 import { readConfig, writeConfig } from "./releases.js";
 
+// ClientPlugin and ClientPluginModule are internal to the client runtime,
+// not exported by @yapmod/types. Define them locally so the plugin
+// registration is fully typed and catches API drift at compile time.
+interface ClientPlugin {
+  id: string;
+  manifest: PluginManifest;
+  defaultEnabled?: boolean;
+  setup(api: YapmodPluginApi): ClientPluginModule;
+}
+
+interface ClientPluginModule {
+  onLoad?: PluginFunction;
+  onUnload?: PluginFunction;
+  settings?: unknown;
+}
+
 /**
  * Creates the plugin definition for registerClientPlugin().
- * Returns a ClientPlugin object with id, manifest, and setup(api).
- * The setup function returns a ClientPluginModule with onLoad hook.
+ * Returns a ClientPlugin object with id, manifest, defaultEnabled, and setup(api).
+ * The setup function returns a ClientPluginModule with onLoad and onUnload hooks.
  */
-export function createWebExtPlugin() {
+export function createWebExtPlugin(): ClientPlugin {
   return {
     id: "client:web-ext-config",
     manifest: {
@@ -25,7 +41,8 @@ export function createWebExtPlugin() {
       author: "Yapmod",
       description: "Configure the Yapmod web extension behavior",
     },
-    setup(api: YapmodPluginApi) {
+    defaultEnabled: true,
+    setup(api: YapmodPluginApi): ClientPluginModule {
       // Read initial config and sync to plugin storage outside any reactive
       // context so the signal-based storage proxy doesn't create a circular
       // dependency when the render function reads those same properties.
@@ -39,7 +56,7 @@ export function createWebExtPlugin() {
         label: "Extension",
         icon: "settings",
         render(): JSX.Element {
-          const channel = () => api.storage.channel || "stable";
+          const channel = () => (api.storage.channel as string) || "stable";
 
           // onChange receives the new value directly, not a DOM event.
           const handleChannelChange = (value: string) => {
@@ -74,6 +91,9 @@ export function createWebExtPlugin() {
       return {
         onLoad() {
           api.log("Web extension config plugin loaded");
+        },
+        onUnload() {
+          api.log("Web extension config plugin unloaded");
         },
       };
     },
