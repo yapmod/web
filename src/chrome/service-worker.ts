@@ -32,6 +32,25 @@ function buildDirectBundleUrl(config: WebExtConfig): string | null {
 }
 
 /**
+ * Fetch the latest stable release URL from the GitHub API.
+ * Used as a fallback when the /releases/latest/ redirect fails
+ * (e.g., when no stable release exists yet).
+ */
+async function fetchLatestStableUrl(): Promise<string | null> {
+  const response = await fetch(GITHUB_API_RELEASES_URL);
+  if (!response.ok) {
+    throw new Error(`GitHub API HTTP ${response.status}`);
+  }
+  const data = await response.json();
+  for (const item of data) {
+    if (item.prerelease) continue;
+    const asset = item.assets?.find((a: any) => a.name === "yapmod-client.js");
+    if (asset?.browser_download_url) return asset.browser_download_url;
+  }
+  return null;
+}
+
+/**
  * Fallback: use the GitHub API to find the latest prerelease asset URL.
  * Only called when includePrereleases is true and version is "latest".
  */
@@ -67,6 +86,31 @@ chrome.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
         // Prerelease channel needs the API because GitHub's /releases/latest/ only returns stable.
         if (!bundleUrl && config.channel === "prerelease") {
           bundleUrl = await fetchLatestPrereleaseUrl();
+        }
+
+        // Stable channel: try the direct URL first, but if it fails (e.g., no
+        // stable release exists yet), fall back to the GitHub API to find the
+        // latest stable release, and then try the latest prerelease as a last resort.
+        if (config.channel === "stable" && bundleUrl) {
+          const response = await fetch(bundleUrl);
+          if (!response.ok) {
+            // Direct URL failed — likely no stable release. Try the API fallback.
+            console.log(
+              "[yapmod-web] Stable direct URL failed (HTTP",
+              response.status,
+              "), trying API fallback",
+            );
+            bundleUrl = await fetchLatestStableUrl();
+            if (!bundleUrl) {
+              // No stable release found, fall back to prerelease
+              console.log("[yapmod-web] No stable release found, falling back to prerelease");
+              bundleUrl = await fetchLatestPrereleaseUrl();
+            }
+          } else {
+            const source = await response.text();
+            sendResponse({ source });
+            return;
+          }
         }
 
         if (!bundleUrl) {
