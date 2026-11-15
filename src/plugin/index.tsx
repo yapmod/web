@@ -8,6 +8,7 @@
 
 import type { JSX } from "solid-js";
 import {Select, Hint, SettingsPage, Section, SettingRow} from "@yapmod/ui"
+import type { YapmodPluginApi } from "./yapmod-types.js";
 import type { WebExtConfig } from "./releases.js";
 import { readConfig, writeConfig } from "./releases.js";
 
@@ -24,7 +25,7 @@ export function createWebExtPlugin() {
       author: "Yapmod",
       description: "Configure the Yapmod web extension behavior",
     },
-    setup(api: any) {
+    setup(api: YapmodPluginApi) {
       // Read initial config and sync to plugin storage outside any reactive
       // context so the signal-based storage proxy doesn't create a circular
       // dependency when the render function reads those same properties.
