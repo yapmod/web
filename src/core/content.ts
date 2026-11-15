@@ -16,8 +16,7 @@ import { readConfig } from "../plugin/releases.js";
  * bypasses the page's CSP that would block Blob URLs or inline scripts.
  */
 function fetchAndInjectBundle(config: {
-  version: string;
-  includePrereleases: boolean;
+  channel: "stable" | "prerelease";
 }): Promise<void> {
   return new Promise((resolve, reject) => {
     const runtime = (globalThis as any).chrome?.runtime ?? (globalThis as any).browser?.runtime;

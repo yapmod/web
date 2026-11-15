@@ -14,25 +14,20 @@ const GITHUB_API_RELEASES_URL = "https://api.github.com/repos/yapmod/client/rele
 const PLUGIN_REGISTER_SOURCE = ""; // populated by build-time concatenation
 
 interface WebExtConfig {
-  version: string;
-  includePrereleases: boolean;
+  channel: "stable" | "prerelease";
 }
 
 /**
- * Build a direct download URL for a release asset.
- * - "latest" uses GitHub's /releases/latest/ endpoint (stable only).
- * - A specific tag like "v1.1.0" uses /releases/download/{tag}/.
+ * Build the bundle URL based on the selected release channel.
+ * - "stable" uses GitHub's /releases/latest/ endpoint (stable only).
+ * - "prerelease" falls back to the GitHub API to find the latest prerelease.
  */
 function buildDirectBundleUrl(config: WebExtConfig): string | null {
-  if (config.version === "latest") {
-    // GitHub's /releases/latest/ only returns the latest stable (non-prerelease) release.
-    // If the user wants prereleases, we fall back to the API below.
-    if (config.includePrereleases) return null;
+  if (config.channel === "stable") {
     return `${GITHUB_BASE}/releases/latest/download/yapmod-client.js`;
   }
-  // Specific version tag
-  const tag = config.version.startsWith("v") ? config.version : `v${config.version}`;
-  return `${GITHUB_BASE}/releases/download/${tag}/yapmod-client.js`;
+  // Prerelease channel needs the API to find the latest prerelease asset.
+  return null;
 }
 
 /**
@@ -64,14 +59,12 @@ browser.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
     (async () => {
       try {
         const config: WebExtConfig = message.config || {
-          version: "latest",
-          includePrereleases: false,
+          channel: "stable",
         };
         let bundleUrl = resolveBundleUrl(config);
 
-        // If includePrereleases is true and version is "latest", fall back to the API
-        // because GitHub's /releases/latest/ only returns stable releases.
-        if (!bundleUrl && config.includePrereleases && config.version === "latest") {
+        // Prerelease channel needs the API because GitHub's /releases/latest/ only returns stable.
+        if (!bundleUrl && config.channel === "prerelease") {
           bundleUrl = await fetchLatestPrereleaseUrl();
         }
 

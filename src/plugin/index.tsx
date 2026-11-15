@@ -1,19 +1,21 @@
-// Web extension plugin: provides settings for configuring the Yapmod
-// web extension itself — client version, injection behavior, debugging,
-// and host filtering.
+// Web extension plugin: provides a single setting to choose the release
+// channel (stable or prerelease) for the Yapmod client bundle.
 //
 // Registered via globalThis.YapmodClient.registerClientPlugin() after
 // the Yapmod bundle loads. Uses SolidJS JSX syntax — the build pipeline
 // (babel-preset-solid + shared-import rewrite) compiles JSX and rewrites
 // solid-js imports to use the shared yapmod instance.
 
+import {createMemo} from "solid-js";
 import type { JSX } from "solid-js";
+import {Select, Hint, SettingsPage, Section, SettingRow} from "@yapmod/ui"
 import type { WebExtConfig } from "./releases.js";
 import { readConfig, writeConfig } from "./releases.js";
 
 /**
  * Creates the plugin definition for registerClientPlugin().
- * Returns a plain object — no eval needed, just a function call.
+ * Returns a ClientPlugin object with id, manifest, and setup(api).
+ * The setup function returns a ClientPluginModule with onLoad hook.
  */
 export function createWebExtPlugin() {
   return {
@@ -28,12 +30,7 @@ export function createWebExtPlugin() {
       // context so the signal-based storage proxy doesn't create a circular
       // dependency when the render function reads those same properties.
       const config: WebExtConfig = readConfig();
-      api.storage.version = config.version;
-      api.storage.includePrereleases = config.includePrereleases;
-      api.storage.verboseLogging = config.verboseLogging;
-      api.storage.autoStart = config.autoStart;
-      api.storage.injectionDelay = config.injectionDelay;
-      api.storage.allowedHosts = config.allowedHosts;
+      api.storage.channel = config.channel;
       api.flushStorage();
 
       // Register settings section with settings icon
@@ -42,97 +39,37 @@ export function createWebExtPlugin() {
         label: "Extension",
         icon: "settings",
         render(): JSX.Element {
-          const Switch = api.ui.Switch;
-          const Input = api.ui.Input;
-          const Select = api.ui.Select;
-          const Hint = api.ui.Hint;
+          // Use createMemo so the channel value is tracked reactively through
+          // the storage proxy signal — without it, the plain const binding
+          // captures the initial value and the Select never updates.
+          const channel = createMemo(() => api.storage.channel || "stable");
 
-          // Re-read config reactively via storage
-          const version = api.storage.version || "latest";
-          const includePrereleases = api.storage.includePrereleases || false;
-          const verboseLogging = api.storage.verboseLogging || false;
-          const autoStart = api.storage.autoStart !== false;
-          const injectionDelay = api.storage.injectionDelay || 0;
-          const allowedHosts = api.storage.allowedHosts || "";
-
-          const handleVersionChange = (e: Event) => {
-            const target = e.target as HTMLSelectElement;
-            writeConfig({ version: target.value, includePrereleases: config.includePrereleases, verboseLogging: config.verboseLogging, autoStart: config.autoStart, injectionDelay: config.injectionDelay, allowedHosts: config.allowedHosts });
-            api.storage.version = target.value;
+          // onChange receives the new value directly, not a DOM event.
+          const handleChannelChange = (value: string) => {
+            const nextChannel = value === "prerelease" ? "prerelease" : "stable";
+            writeConfig({ channel: nextChannel });
+            api.storage.channel = nextChannel;
             api.flushStorage();
           };
-
-          const handlePrereleaseChange = (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            writeConfig({ ...config, includePrereleases: target.checked });
-            api.storage.includePrereleases = target.checked;
-            api.flushStorage();
-          };
-
-          const handleVerboseChange = (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            writeConfig({ ...config, verboseLogging: target.checked });
-            api.storage.verboseLogging = target.checked;
-            api.flushStorage();
-          };
-
-          const handleAutoStartChange = (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            writeConfig({ ...config, autoStart: target.checked });
-            api.storage.autoStart = target.checked;
-            api.flushStorage();
-          };
-
-          const handleDelayChange = (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            const val = parseInt(target.value, 10);
-            const delay = isNaN(val) ? 0 : Math.max(0, val);
-            writeConfig({ ...config, injectionDelay: delay });
-            api.storage.injectionDelay = delay;
-            api.flushStorage();
-          };
-
-          const handleHostsChange = (e: Event) => {
-            const target = e.target as HTMLInputElement;
-            writeConfig({ ...config, allowedHosts: target.value });
-            api.storage.allowedHosts = target.value;
-            api.flushStorage();
-          };
-
-          const sectionStyle = "border-top: 1px solid var(--yp-border, #ffffff12); padding-top: 8px;";
-          const headingStyle = "margin: 0 0 8px; font-size: 14px;";
 
           return (
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-              {/* --- Version section --- */}
-              <Select label="Version" value={version} onChange={handleVersionChange}>
-                <option value="latest">Latest stable</option>
-              </Select>
-              <Switch row label="Include pre-releases" checked={includePrereleases} onChange={handlePrereleaseChange} />
+            <SettingsPage title="Extension" description="Configure the Yapmod web extension behavior">
+              <Section label="Release channel">
+                <SettingRow label="Channel" hint="Choose which release channel to use for the Yapmod client">
+                  <Select
+                    value={channel()}
+                    onChange={handleChannelChange}
+                    options={[
+                      { value: "stable", label: "Stable" },
+                      { value: "prerelease", label: "Pre-release" },
+                    ]}
+                    style={{ width: "160px" }}
+                  />
+                </SettingRow>
+              </Section>
 
-              {/* --- Behavior section --- */}
-              <div style={sectionStyle}>
-                <h3 style={headingStyle}>Behavior</h3>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                  <Switch row label="Auto-start Yapmod" hint="Inject Yapmod automatically on matching pages." checked={autoStart} onChange={handleAutoStartChange} />
-                  <Input label="Injection delay (ms)" type="number" min="0" value={injectionDelay} onChange={handleDelayChange} hint="Delay before injection, useful for debugging race conditions." />
-                </div>
-              </div>
-
-              {/* --- Debugging section --- */}
-              <div style={sectionStyle}>
-                <h3 style={headingStyle}>Debugging</h3>
-                <Switch row label="Verbose logging" hint="Enable detailed console output for troubleshooting." checked={verboseLogging} onChange={handleVerboseChange} />
-              </div>
-
-              {/* --- Hosts section --- */}
-              <div style={sectionStyle}>
-                <h3 style={headingStyle}>Hosts</h3>
-                <Input label="Additional allowed hosts" placeholder="localhost:3000, 127.0.0.1:8080" value={allowedHosts} onChange={handleHostsChange} hint="Comma-separated list of extra hosts where Yapmod should inject." />
-              </div>
-
-              <Hint>Changes take effect on the next page reload.</Hint>
-            </div>
+              <Hint style={{ marginTop: "0.75rem" }}>Changes take effect on the next page reload.</Hint>
+            </SettingsPage>
           );
         },
       });
