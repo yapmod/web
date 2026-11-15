@@ -6,6 +6,7 @@
 // (babel-preset-solid + shared-import rewrite) compiles JSX and rewrites
 // solid-js imports to use the shared yapmod instance.
 
+import {createMemo} from "solid-js";
 import type { JSX } from "solid-js";
 import {Select, Hint, SettingsPage, Section, SettingRow} from "@yapmod/ui"
 import type { WebExtConfig } from "./releases.js";
@@ -38,14 +39,16 @@ export function createWebExtPlugin() {
         label: "Extension",
         icon: "settings",
         render(): JSX.Element {
-          // Re-read config reactively via storage
-          const channel = api.storage.channel || "stable";
+          // Use createMemo so the channel value is tracked reactively through
+          // the storage proxy signal — without it, the plain const binding
+          // captures the initial value and the Select never updates.
+          const channel = createMemo(() => api.storage.channel || "stable");
 
           // onChange receives the new value directly, not a DOM event.
           const handleChannelChange = (value: string) => {
-            const channel = value === "prerelease" ? "prerelease" : "stable";
-            writeConfig({ channel });
-            api.storage.channel = channel;
+            const nextChannel = value === "prerelease" ? "prerelease" : "stable";
+            writeConfig({ channel: nextChannel });
+            api.storage.channel = nextChannel;
             api.flushStorage();
           };
 
@@ -54,17 +57,18 @@ export function createWebExtPlugin() {
               <Section label="Release channel">
                 <SettingRow label="Channel" hint="Choose which release channel to use for the Yapmod client">
                   <Select
-                    value={channel}
+                    value={channel()}
                     onChange={handleChannelChange}
                     options={[
                       { value: "stable", label: "Stable" },
                       { value: "prerelease", label: "Pre-release" },
                     ]}
+                    style={{ width: "160px" }}
                   />
                 </SettingRow>
               </Section>
 
-              <Hint>Changes take effect on the next page reload.</Hint>
+              <Hint style={{ marginTop: "0.75rem" }}>Changes take effect on the next page reload.</Hint>
             </SettingsPage>
           );
         },

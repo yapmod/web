@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { transformSync } from '@babel/core';
 import { defineConfig } from 'tsup';
-import { getBabelPresets, getSharedImportsPlugin } from '@yapmod/builder/transform';
+import {
+  getBabelPresets,
+  getSharedImportsPlugin,
+  getYapmodGlobalPlugin,
+} from '@yapmod/builder/transform';
 
 /**
  * tsup/esbuild plugin that runs the @yapmod/builder transform pipeline
@@ -9,8 +13,9 @@ import { getBabelPresets, getSharedImportsPlugin } from '@yapmod/builder/transfo
  * imports are rewritten to use the shared YapmodClient instance.
  */
 function solidTransformPlugin() {
-  const babelPlugin = getSharedImportsPlugin();
   const presets = getBabelPresets();
+  const sharedImportsPlugin = getSharedImportsPlugin();
+  const yapmodGlobalPlugin = getYapmodGlobalPlugin();
 
   return {
     name: 'yapmod:solid-transform',
@@ -33,30 +38,21 @@ function solidTransformPlugin() {
 
         if (!first?.code) return undefined;
 
-        // Pass 2: rewrite solid-js and @yapmod/ui imports to yapmod.<ns>
+        // Pass 2: rewrite solid-js / @yapmod/ui imports to yapmod.<ns>,
+        // then resolve the `yapmod` free variable to globalThis.YapmodClient.
         const second = transformSync(first.code, {
           filename: args.path,
           babelrc: false,
           configFile: false,
-          plugins: [babelPlugin],
+          plugins: [sharedImportsPlugin, yapmodGlobalPlugin],
           sourceType: 'module',
           ast: false,
         });
 
         if (!second?.code) return undefined;
 
-        // Pass 3: rewrite `yapmod.<ns>` to `globalThis.YapmodClient.api.<ns>`
-        // so the web extension's IIFE bundle accesses the shared SolidJS
-        // instances exposed on the YapmodClient handle's `api` property.
-        // Only match `yapmod.` as a code identifier (not inside string literals)
-        // by requiring a word boundary or non-string context before it.
-        const third = second.code.replace(
-          /(?<![\\"])yapmod\./g,
-          'globalThis.YapmodClient.api.',
-        );
-
         return {
-          contents: third,
+          contents: second.code,
           loader: 'js' as const,
         };
       });
