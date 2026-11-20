@@ -22,7 +22,9 @@ async function sendMessage(request: BackgroundRequest): Promise<BackgroundReply>
   return response;
 }
 
-async function requireAcknowledgement(request: Exclude<BackgroundRequest, { type: 'FETCH_BUNDLE' }>) {
+async function requireAcknowledgement(
+  request: Exclude<BackgroundRequest, { type: 'FETCH_BUNDLE' }>,
+) {
   const response = await sendMessage(request);
   if (response.ok !== true) throw new Error(`Missing acknowledgement for ${request.type}`);
 }

@@ -6,11 +6,11 @@
 // (babel-preset-solid + shared-import rewrite) compiles JSX and rewrites
 // solid-js imports to use the shared yapmod instance.
 
-import type { JSX } from "solid-js";
-import {Select, Hint, SettingsPage, Section, SettingRow} from "@yapmod/ui"
-import type { YapmodPluginApi, PluginManifest, PluginFunction } from "@yapmod/types";
-import type { WebExtConfig } from "./releases.js";
-import { readConfig, writeConfig } from "./releases.js";
+import type { JSX } from 'solid-js';
+import { Select, Hint, SettingsPage, Section, SettingRow } from '@yapmod/ui';
+import type { YapmodPluginApi, PluginManifest, PluginFunction } from '@yapmod/types';
+import type { WebExtConfig } from './releases.js';
+import { readConfig, writeConfig } from './releases.js';
 
 // ClientPlugin and ClientPluginModule are internal to the client runtime,
 // not exported by @yapmod/types. Define them locally so the plugin
@@ -35,11 +35,11 @@ interface ClientPluginModule {
  */
 export function createWebExtPlugin(): ClientPlugin {
   return {
-    id: "client:web-ext-config",
+    id: 'client:web-ext-config',
     manifest: {
-      name: "Web Extension Config",
-      author: "Yapmod",
-      description: "Configure the Yapmod web extension behavior",
+      name: 'Web Extension Config',
+      author: 'Yapmod',
+      description: 'Configure the Yapmod web extension behavior',
     },
     defaultEnabled: true,
     setup(api: YapmodPluginApi): ClientPluginModule {
@@ -52,37 +52,45 @@ export function createWebExtPlugin(): ClientPlugin {
 
       // Register settings section with settings icon
       api.settings.registerSection({
-        id: "web-ext-config",
-        label: "Extension",
-        icon: "settings",
+        id: 'web-ext-config',
+        label: 'Extension',
+        icon: 'settings',
         render(): JSX.Element {
-          const channel = () => (api.storage.channel as string) || "stable";
+          const channel = () => (api.storage.channel as string) || 'stable';
 
           // onChange receives the new value directly, not a DOM event.
           const handleChannelChange = (value: string) => {
-            const nextChannel = value === "prerelease" ? "prerelease" : "stable";
+            const nextChannel = value === 'prerelease' ? 'prerelease' : 'stable';
             writeConfig({ channel: nextChannel });
             api.storage.channel = nextChannel;
             api.flushStorage();
           };
 
           return (
-            <SettingsPage title="Extension" description="Configure the Yapmod web extension behavior">
+            <SettingsPage
+              title="Extension"
+              description="Configure the Yapmod web extension behavior"
+            >
               <Section label="Release channel">
-                <SettingRow label="Channel" hint="Choose which release channel to use for the Yapmod client">
+                <SettingRow
+                  label="Channel"
+                  hint="Choose which release channel to use for the Yapmod client"
+                >
                   <Select
                     value={channel()}
                     onChange={handleChannelChange}
                     options={[
-                      { value: "stable", label: "Stable" },
-                      { value: "prerelease", label: "Pre-release" },
+                      { value: 'stable', label: 'Stable' },
+                      { value: 'prerelease', label: 'Pre-release' },
                     ]}
-                    style={{ width: "160px" }}
+                    style={{ width: '160px' }}
                   />
                 </SettingRow>
               </Section>
 
-              <Hint style={{ marginTop: "0.75rem" }}>Changes take effect on the next page reload.</Hint>
+              <Hint style={{ marginTop: '0.75rem' }}>
+                Changes take effect on the next page reload.
+              </Hint>
             </SettingsPage>
           );
         },
@@ -90,10 +98,10 @@ export function createWebExtPlugin(): ClientPlugin {
 
       return {
         onLoad() {
-          api.log("Web extension config plugin loaded");
+          api.log('Web extension config plugin loaded');
         },
         onUnload() {
-          api.log("Web extension config plugin unloaded");
+          api.log('Web extension config plugin unloaded');
         },
       };
     },

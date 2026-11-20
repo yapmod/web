@@ -5,20 +5,20 @@
 
 export function injectBundle(sourceCode: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const blob = new Blob([sourceCode], { type: "application/javascript" });
+    const blob = new Blob([sourceCode], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
-    const script = document.createElement("script");
+    const script = document.createElement('script');
     script.src = url;
-    script.addEventListener("load", () => {
+    script.addEventListener('load', () => {
       document.head.removeChild(script);
       URL.revokeObjectURL(url);
       resolve();
     });
-    script.addEventListener("error", () => {
-      console.error("[yapmod-web] Injection failed");
+    script.addEventListener('error', () => {
+      console.error('[yapmod-web] Injection failed');
       document.head.removeChild(script);
       URL.revokeObjectURL(url);
-      reject(new Error("Script injection failed"));
+      reject(new Error('Script injection failed'));
     });
     document.head.appendChild(script);
   });

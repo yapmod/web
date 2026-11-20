@@ -4,10 +4,10 @@
 
 export interface WebExtConfig {
   // Which release channel to use: "stable" for latest stable, "prerelease" for latest pre-release.
-  channel: "stable" | "prerelease";
+  channel: 'stable' | 'prerelease';
 }
 
-const CONFIG_KEY = "yapmod.web-ext-config.v1";
+const CONFIG_KEY = 'yapmod.web-ext-config.v1';
 
 /**
  * Read the web extension config from localStorage.
@@ -17,7 +17,7 @@ export function readConfig(): WebExtConfig {
     const raw = localStorage.getItem(CONFIG_KEY);
     if (!raw) return defaultConfig();
     const parsed = JSON.parse(raw);
-    const channel = parsed.channel === "prerelease" ? "prerelease" : "stable";
+    const channel = parsed.channel === 'prerelease' ? 'prerelease' : 'stable';
     return { channel };
   } catch {
     return defaultConfig();
@@ -26,7 +26,7 @@ export function readConfig(): WebExtConfig {
 
 function defaultConfig(): WebExtConfig {
   return {
-    channel: "stable",
+    channel: 'stable',
   };
 }
 

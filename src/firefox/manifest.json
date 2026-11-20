@@ -9,22 +9,9 @@
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-  "background": {
-    "scripts": [
-      "background.js"
-    ],
-    "persistent": false
-  },
+  "background": { "scripts": ["background.js"], "persistent": false },
   "content_scripts": [
-    {
-      "matches": [
-        "*://*.yapin.gg/*"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "run_at": "document_idle"
-    }
+    { "matches": ["*://*.yapin.gg/*"], "js": ["content.js"], "run_at": "document_idle" }
   ],
   "permissions": [
     "storage",

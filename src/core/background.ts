@@ -1,8 +1,8 @@
-const GITHUB_BASE = "https://github.com/yapmod/client";
-const GITHUB_API_RELEASES_URL = "https://api.github.com/repos/yapmod/client/releases?per_page=100";
+const GITHUB_BASE = 'https://github.com/yapmod/client';
+const GITHUB_API_RELEASES_URL = 'https://api.github.com/repos/yapmod/client/releases?per_page=100';
 
 interface WebExtConfig {
-  channel: "stable" | "prerelease";
+  channel: 'stable' | 'prerelease';
 }
 
 /**
@@ -11,7 +11,7 @@ interface WebExtConfig {
  * - "prerelease" falls back to the GitHub API to find the latest prerelease.
  */
 function buildDirectBundleUrl(config: WebExtConfig): string | null {
-  if (config.channel === "stable") {
+  if (config.channel === 'stable') {
     return `${GITHUB_BASE}/releases/latest/download/yapmod-client.js`;
   }
   // Prerelease channel needs the API to find the latest prerelease asset.
@@ -31,7 +31,7 @@ async function fetchLatestStableUrl(): Promise<string | null> {
   const data = await response.json();
   for (const item of data) {
     if (item.prerelease) continue;
-    const asset = item.assets?.find((a: any) => a.name === "yapmod-client.js");
+    const asset = item.assets?.find((a: any) => a.name === 'yapmod-client.js');
     if (asset?.browser_download_url) return asset.browser_download_url;
   }
   return null;
@@ -49,7 +49,7 @@ async function fetchLatestPrereleaseUrl(): Promise<string | null> {
   const data = await response.json();
   for (const item of data) {
     if (!item.prerelease) continue;
-    const asset = item.assets?.find((a: any) => a.name === "yapmod-client.js");
+    const asset = item.assets?.find((a: any) => a.name === 'yapmod-client.js');
     if (asset?.browser_download_url) return asset.browser_download_url;
   }
   return null;
@@ -61,35 +61,35 @@ function resolveBundleUrl(config: WebExtConfig): string | null {
 
 export function registerBackground(extension: Pick<typeof chrome, 'runtime' | 'scripting'>) {
   extension.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
-    if (message.type === "FETCH_BUNDLE") {
+    if (message.type === 'FETCH_BUNDLE') {
       (async () => {
         try {
           const config: WebExtConfig = message.config || {
-            channel: "stable",
+            channel: 'stable',
           };
           let bundleUrl = resolveBundleUrl(config);
 
           // Prerelease channel needs the API because GitHub's /releases/latest/ only returns stable.
-          if (!bundleUrl && config.channel === "prerelease") {
+          if (!bundleUrl && config.channel === 'prerelease') {
             bundleUrl = await fetchLatestPrereleaseUrl();
           }
 
           // Stable channel: try the direct URL first, but if it fails (e.g., no
           // stable release exists yet), fall back to the GitHub API to find the
           // latest stable release, and then try the latest prerelease as a last resort.
-          if (config.channel === "stable" && bundleUrl) {
+          if (config.channel === 'stable' && bundleUrl) {
             const response = await fetch(bundleUrl);
             if (!response.ok) {
               // Direct URL failed — likely no stable release. Try the API fallback.
               console.log(
-                "[yapmod-web] Stable direct URL failed (HTTP",
+                '[yapmod-web] Stable direct URL failed (HTTP',
                 response.status,
-                "), trying API fallback",
+                '), trying API fallback',
               );
               bundleUrl = await fetchLatestStableUrl();
               if (!bundleUrl) {
                 // No stable release found, fall back to prerelease
-                console.log("[yapmod-web] No stable release found, falling back to prerelease");
+                console.log('[yapmod-web] No stable release found, falling back to prerelease');
                 bundleUrl = await fetchLatestPrereleaseUrl();
               }
             } else {
@@ -100,7 +100,7 @@ export function registerBackground(extension: Pick<typeof chrome, 'runtime' | 's
           }
 
           if (!bundleUrl) {
-            sendResponse({ error: "No bundle URL found for current config" });
+            sendResponse({ error: 'No bundle URL found for current config' });
             return;
           }
           const response = await fetch(bundleUrl);
@@ -122,7 +122,7 @@ export function registerBackground(extension: Pick<typeof chrome, 'runtime' | 's
         try {
           const tabId = sender.tab?.id;
           if (tabId === undefined) {
-            sendResponse({ error: "No tab ID available" });
+            sendResponse({ error: 'No tab ID available' });
             return;
           }
           if (message.type === 'REGISTER_PLUGIN') {
@@ -134,10 +134,10 @@ export function registerBackground(extension: Pick<typeof chrome, 'runtime' | 's
           } else {
             await extension.scripting.executeScript({
               target: { tabId },
-              world: "MAIN",
+              world: 'MAIN',
               injectImmediately: true,
               func: (code: string) => {
-                const el = document.createElement("script");
+                const el = document.createElement('script');
                 el.textContent = code;
                 document.head.appendChild(el);
                 el.remove();
@@ -157,6 +157,6 @@ export function registerBackground(extension: Pick<typeof chrome, 'runtime' | 's
   });
 
   extension.runtime.onInstalled.addListener((details) => {
-    console.log("[yapmod-web] Extension installed", details.reason);
+    console.log('[yapmod-web] Extension installed', details.reason);
   });
 }
