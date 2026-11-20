@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Use the Yapmod desktop application icon in Chrome and Firefox (#9).
+
+### Fixed
+
+- Include the manifests, settings plugin and static assets in development and production builds (#10).
+
 ## v1.0.0
 
 ### Added
@@ -13,3 +23,5 @@
 ### Fixed
 
 - Stable channel silently fails when no stable release exists; now falls back to prerelease (#7)
+
+[Unreleased]: https://github.com/yapmod/web/compare/v1.0.0...HEAD

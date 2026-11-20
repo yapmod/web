@@ -1,6 +1,6 @@
 # Yapmod Web Extension
 
-A cross-browser web extension that automatically injects the [Yapmod](../client/README.md) client bundle into the [Yapin](https://yapin.gg) website. No manual console injection needed.
+A cross-browser web extension that automatically injects the [Yapmod](https://github.com/yapmod/client) client bundle into the [Yapin](https://yapin.gg) website. No manual console injection needed.
 
 Works on **Chrome** (Manifest V3) and **Firefox** (WebExtensions) with shared TypeScript source code built by `tsup`.
 
@@ -11,7 +11,6 @@ When you visit `yapin.gg`, the extension fetches the latest Yapmod bundle from G
 ## Development
 
 ```sh
-cd web
 pnpm install
 pnpm dev
 ```
@@ -30,18 +29,20 @@ The development build watches for TypeScript changes and rebuilds to `dist/` aut
 
 ## Loading the extension
 
+Download the archive for your browser from [GitHub Releases](https://github.com/yapmod/web/releases/latest) and extract it, or run `pnpm build` from a local checkout.
+
 ### Chrome
 
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. Click **Load unpacked**
-4. Select the `web/chrome/` directory (make sure `web/dist/` contains the built files)
+4. Select the extracted `chrome.zip` directory, or `dist/chrome/` after a local build.
 
 ### Firefox
 
 1. Open `about:debugging`
 2. Click **This Firefox** → **Load Temporary Add-on**
-3. Select `web/firefox/manifest.json` (make sure `web/dist/` contains the built files)
+3. Select `manifest.json` from the extracted `firefox.zip` directory, or `dist/firefox/manifest.json` after a local build.
 
 ## Contributing
 
@@ -51,4 +52,5 @@ description body.
 
 ## License
 
-This project is licensed under the [GNU General Public License v3.0](../client/LICENSE).
+The extension and its icons are licensed under the [GNU General Public License v3.0](LICENSE).
+The 32px and 128px icons come directly from the Yapmod desktop application. The 16px and 48px variants are resized from its 512px icon. [Original desktop artwork](https://github.com/ilyeshdz/yapmod/tree/b90b6740334ef35fefee44c9da0c518c4f575535/src-tauri/icons)

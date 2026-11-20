@@ -49,32 +49,12 @@ function fetchAndInjectBundle(config: {
   });
 }
 
-/**
- * Fetches the plugin registration script source from the service worker
- * and injects it into the page's main world. This registers the web
- * extension config client plugin with YapmodClient.
- */
 function injectPluginRegistration(): void {
-  const runtime = (globalThis as any).chrome?.runtime ?? (globalThis as any).browser?.runtime;
-  if (!runtime?.sendMessage) {
-    console.warn("[yapmod-web] Extension runtime not available for plugin registration");
-    return;
-  }
-  runtime.sendMessage({ type: "GET_PLUGIN_SOURCE" }, (response: any) => {
-    if (!response?.source) {
-      console.warn("[yapmod-web] No plugin registration source available");
-      return;
+  chrome.runtime.sendMessage({ type: 'REGISTER_PLUGIN' }, (response) => {
+    const error = chrome.runtime.lastError?.message ?? response?.error;
+    if (error || !response?.ok) {
+      console.warn('[yapmod-web] Failed to register settings plugin:', error ?? 'Missing reply');
     }
-    runtime.sendMessage(
-      { type: "INJECT_BUNDLE", source: response.source },
-      (injectResponse: any) => {
-        if (injectResponse?.error) {
-          console.warn("[yapmod-web] Failed to inject plugin registration:", injectResponse.error);
-        } else {
-          console.log("[yapmod-web] Plugin registration injected");
-        }
-      },
-    );
   });
 }
 

@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsup --watch",
-    "build": "tsup && node scripts/embed-plugin-source.mjs && cp src/chrome/manifest.json dist/chrome/ && cp src/firefox/manifest.json dist/firefox/",
+    "dev": "tsup --watch src --watch LICENSE",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
     "format": "oxfmt src/",

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { copyFile, cp } from 'node:fs/promises';
 import { transformSync } from '@babel/core';
 import { defineConfig } from 'tsup';
 import {
@@ -60,37 +61,29 @@ function solidTransformPlugin() {
   };
 }
 
-export default defineConfig([
-  // Chrome extension bundles
-  {
-    entry: {
-      'chrome/content': 'src/core/content.ts',
-      'chrome/service-worker': 'src/chrome/service-worker.ts',
-      'chrome/plugin-register': 'src/plugin/register.ts',
-    },
-    format: ['iife'],
-    dts: false,
-    splitting: false,
-    clean: false,
-    target: 'es2020',
-    outDir: 'dist',
-    outExtension: () => ({ js: '.js' }),
-    esbuildPlugins: [solidTransformPlugin()],
+export default defineConfig({
+  entry: {
+    'chrome/content': 'src/core/content.ts',
+    'chrome/service-worker': 'src/chrome/service-worker.ts',
+    'chrome/plugin-register': 'src/plugin/register.ts',
+    'firefox/content': 'src/core/content.ts',
+    'firefox/background': 'src/firefox/background.ts',
+    'firefox/plugin-register': 'src/plugin/register.ts',
   },
-  // Firefox extension bundles
-  {
-    entry: {
-      'firefox/content': 'src/core/content.ts',
-      'firefox/background': 'src/firefox/background.ts',
-      'firefox/plugin-register': 'src/plugin/register.ts',
-    },
-    format: ['iife'],
-    dts: false,
-    splitting: false,
-    clean: true,
-    target: 'es2020',
-    outDir: 'dist',
-    outExtension: () => ({ js: '.js' }),
-    esbuildPlugins: [solidTransformPlugin()],
+  format: ['iife'],
+  dts: false,
+  splitting: false,
+  clean: true,
+  target: 'es2020',
+  outDir: 'dist',
+  outExtension: () => ({ js: '.js' }),
+  esbuildPlugins: [solidTransformPlugin()],
+  async onSuccess() {
+    for (const browser of ['chrome', 'firefox']) {
+      const output = `dist/${browser}`;
+      await copyFile(`src/${browser}/manifest.json`, `${output}/manifest.json`);
+      await cp('src/assets/icons', `${output}/icons`, { recursive: true });
+      await copyFile('LICENSE', `${output}/LICENSE`);
+    }
   },
-]);
+});
