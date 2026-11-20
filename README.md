@@ -23,6 +23,7 @@ The development build watches for TypeScript changes and rebuilds to `dist/` aut
 | ----------------- | ------------------------- |
 | `pnpm dev`        | Build and watch for changes |
 | `pnpm build`      | Build for production      |
+| `pnpm test`       | Build and test both content scripts |
 | `pnpm typecheck`  | Type-check the source     |
 | `pnpm lint`       | Run Oxlint                |
 | `pnpm format`     | Format with Oxfmt         |

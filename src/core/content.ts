@@ -1,78 +1,50 @@
-// Shared core: content script that fetches and injects the Yapmod bundle
-// Runs at document_idle on *.yapin.gg
-// Uses the service worker as a bridge to avoid CORS issues when fetching
-// from GitHub (the page's CORS policy blocks direct fetch to github.com).
-// The service worker injects the bundle via chrome.scripting.executeScript
-// with world:"MAIN", bypassing the page's Content Security Policy.
-// After the Yapmod bundle loads, the plugin registration script is injected
-// to register the web extension config client plugin.
+import type { WebExtConfig } from '../plugin/releases.js';
+import { readConfig } from '../plugin/releases.js';
 
-import { readConfig } from "../plugin/releases.js";
+type BackgroundRequest =
+  | { type: 'FETCH_BUNDLE'; config: WebExtConfig }
+  | { type: 'INJECT_BUNDLE'; source: string }
+  | { type: 'REGISTER_PLUGIN' };
 
-/**
- * Requests the service worker to fetch and inject the Yapmod bundle.
- * The service worker handles the GitHub API call, bundle download, and
- * injection via chrome.scripting.executeScript (world: "MAIN"), which
- * bypasses the page's CSP that would block Blob URLs or inline scripts.
- */
-function fetchAndInjectBundle(config: {
-  channel: "stable" | "prerelease";
-}): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const runtime = (globalThis as any).chrome?.runtime ?? (globalThis as any).browser?.runtime;
-    if (!runtime?.sendMessage) {
-      reject(new Error("Extension runtime not available"));
-      return;
-    }
-    runtime.sendMessage({ type: "FETCH_BUNDLE", config }, (response: any) => {
-      if (response?.error) {
-        reject(new Error(response.error));
-        return;
-      } else if (response?.source) {
-        // Now ask the service worker to inject the bundle into the page's main world
-        runtime.sendMessage(
-          { type: "INJECT_BUNDLE", source: response.source },
-          (injectResponse: any) => {
-            if (injectResponse?.error) {
-              reject(new Error(injectResponse.error));
-            } else {
-              resolve();
-            }
-          },
-        );
-        return;
-      } else {
-        reject(new Error("Unexpected response from service worker"));
-        return;
-      }
-    });
-  });
+interface BackgroundReply {
+  source?: string;
+  ok?: boolean;
+  error?: string;
 }
 
-function injectPluginRegistration(): void {
-  chrome.runtime.sendMessage({ type: 'REGISTER_PLUGIN' }, (response) => {
-    const error = chrome.runtime.lastError?.message ?? response?.error;
-    if (error || !response?.ok) {
-      console.warn('[yapmod-web] Failed to register settings plugin:', error ?? 'Missing reply');
-    }
-  });
+async function sendMessage(request: BackgroundRequest): Promise<BackgroundReply> {
+  const runtime = globalThis.browser?.runtime ?? globalThis.chrome?.runtime;
+  if (!runtime) throw new Error('Extension runtime unavailable');
+
+  const response: BackgroundReply | undefined = await runtime.sendMessage(request);
+  if (!response) throw new Error(`No reply to ${request.type}`);
+  if (response.error) throw new Error(response.error);
+  return response;
 }
 
-async function loadBundle() {
+async function requireAcknowledgement(request: Exclude<BackgroundRequest, { type: 'FETCH_BUNDLE' }>) {
+  const response = await sendMessage(request);
+  if (response.ok !== true) throw new Error(`Missing acknowledgement for ${request.type}`);
+}
+
+async function loadBundle(canRetry: boolean): Promise<void> {
   try {
-    const config = readConfig();
-    await fetchAndInjectBundle(config);
-    console.log("[yapmod-web] Bundle injected successfully");
-    // Register the web extension config plugin after the Yapmod bundle loads
-    injectPluginRegistration();
+    const { source } = await sendMessage({ type: 'FETCH_BUNDLE', config: readConfig() });
+    if (!source) throw new Error('Background returned an empty client bundle');
+    await requireAcknowledgement({ type: 'INJECT_BUNDLE', source });
   } catch (error) {
-    console.warn("[yapmod-web] Failed to load bundle:", error);
-    // Retry once after 60s
-    setTimeout(() => {
-      console.log("[yapmod-web] Retrying bundle load...");
-      loadBundle();
-    }, 60_000);
+    console.warn('[yapmod-web] Failed to load bundle:', error);
+    if (canRetry) globalThis.setTimeout(() => void loadBundle(false), 60_000);
+    return;
+  }
+
+  console.log('[yapmod-web] Bundle injected successfully');
+  // The client is already running. A settings failure should leave it running once.
+  try {
+    await requireAcknowledgement({ type: 'REGISTER_PLUGIN' });
+  } catch (error) {
+    console.warn('[yapmod-web] Failed to register settings plugin:', error);
   }
 }
 
-loadBundle();
+void loadBundle(true);

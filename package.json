@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsup --watch src --watch LICENSE",
     "build": "tsup",
+    "test": "pnpm build && node --test",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
     "format": "oxfmt src/",
