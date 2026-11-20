@@ -9,6 +9,7 @@
 ### Fixed
 
 - Include the manifests, settings plugin and static assets in development and production builds (#10).
+- Limit failed client loads to one retry after 60 seconds and report missing background replies (#11).
 
 ## v1.0.0
 
