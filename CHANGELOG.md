@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## v1.0.1
 
 ### Changed
 
@@ -26,4 +26,4 @@
 
 - Stable channel silently fails when no stable release exists; now falls back to prerelease (#7)
 
-[Unreleased]: https://github.com/yapmod/web/compare/v1.0.0...HEAD
+[v1.0.1]: https://github.com/yapmod/web/compare/v1.0.0...v1.0.1
