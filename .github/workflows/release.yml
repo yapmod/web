@@ -123,6 +123,29 @@ jobs:
           cd dist/firefox
           zip -r "$GITHUB_WORKSPACE/firefox.zip" .
 
+      - name: Prepare release notes
+        id: notes
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+
+          # Use only the section for this release instead of the whole changelog.
+          awk -v v="$VERSION" '
+            $0 == "## v" v || $0 == "## [v" v "]" { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > "$NOTES_FILE"
+
+          if [ ! -s "$NOTES_FILE" ]; then
+            echo "::warning::No changelog section found for ${TAG}; using the full changelog."
+            cp CHANGELOG.md "$NOTES_FILE"
+          fi
+
+          echo "file=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
@@ -130,4 +153,4 @@ jobs:
           files: |
             chrome.zip
             firefox.zip
-          body_path: CHANGELOG.md
+          body_path: ${{ steps.notes.outputs.file }}
