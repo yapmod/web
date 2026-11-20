@@ -3,9 +3,7 @@
 
 export default {
   // GitHub repository
-  repo: {
-    name: 'yapmod/web',
-  },
+  repo: 'yapmod/web',
 
   // Exclude bot commits from changelog
   excludeAuthors: ['dependabot[bot]'],

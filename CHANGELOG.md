@@ -2,8 +2,6 @@
 
 ## [Unreleased]
 
-## v1.0.0
-
 ### Added
 
 - Use `@yapmod/types` from npm for full type safety instead of hand-written type mirrors (#7)
@@ -16,8 +14,7 @@
 
 - Stable channel silently fails when no stable release exists; now falls back to prerelease (#7)
 
-### [Unreleased]: https://github.com/yapmod/web/compare/v1.0.0...HEAD
-### [v1.0.0]: https://github.com/yapmod/web/compare/v1.4.0...v1.0.0
+### [Unreleased]: https://github.com/yapmod/web/compare/v1.4.0...HEAD
 ## v1.4.0
 
 ### 🚀 Enhancements

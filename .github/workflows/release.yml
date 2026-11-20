@@ -4,12 +4,21 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: 'Version bump type (patch/minor/major)'
-        required: false
+        description: 'Version bump type'
+        required: true
         default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
   push:
     tags:
       - 'v*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -20,13 +29,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Fetch full history and tags so changelogen can find the previous release.
           fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 12
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,52 +55,79 @@ jobs:
       - name: Bump version, generate changelog, and tag
         if: github.event_name == 'workflow_dispatch'
         id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
         run: |
-          BUMP_INPUT="${{ github.event.inputs.bump }}"
+          set -euo pipefail
 
-          # Run changelogen to bump version and update CHANGELOG.md
-          pnpm release --$BUMP_INPUT
-
-          # Sync version to manifest files
-          pnpm version:sync
-
-          NEW_VERSION=$(node -p "require('./package.json').version")
-
-          # Configure git
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
-          # Commit changelog and version changes
-          git add CHANGELOG.md package.json pnpm-lock.yaml src/chrome/manifest.json src/firefox/manifest.json
+          # changelogen bumps package.json and regenerates CHANGELOG.md from
+          # conventional commits since the previous tag.
+          pnpm exec changelogen --bump "--${BUMP}" --no-commit --no-tag
+
+          # Keep both extension manifests in sync with package.json.
+          pnpm version:sync
+
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+
+          git add CHANGELOG.md package.json pnpm-lock.yaml \
+            src/chrome/manifest.json src/firefox/manifest.json
+
+          if git diff --cached --quiet; then
+            echo "::error::No release changes detected. Add commits since the last tag before releasing."
+            exit 1
+          fi
+
           git commit -m "chore(release): v${NEW_VERSION}"
+
+          # Refuse to silently move an existing tag; a release tag must point
+          # at exactly one commit.
+          if git rev-parse "refs/tags/v${NEW_VERSION}" >/dev/null 2>&1; then
+            echo "::error::Tag v${NEW_VERSION} already exists."
+            exit 1
+          fi
+
           git tag "v${NEW_VERSION}"
-          git push origin main
+          git push origin HEAD:main
           git push origin "v${NEW_VERSION}"
 
-          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Resolve release tag
+        id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_VERSION: ${{ steps.bump.outputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "tag=v${DISPATCH_VERSION}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build
         run: pnpm build
 
       - name: Package Chrome extension
-        run: zip -r chrome.zip dist/chrome/
+        run: |
+          set -euo pipefail
+          cd dist/chrome
+          zip -r "$GITHUB_WORKSPACE/chrome.zip" .
 
       - name: Package Firefox extension
-        run: zip -r firefox.zip dist/firefox/
-
-      - name: Get release tag
-        id: tag
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=v${{ steps.bump.outputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            # github.ref_name is like "v1.2.5" for tag pushes
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+          cd dist/firefox
+          zip -r "$GITHUB_WORKSPACE/firefox.zip" .
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
-          files: chrome.zip,firefox.zip
+          files: |
+            chrome.zip
+            firefox.zip
           body_path: CHANGELOG.md
