@@ -55,6 +55,8 @@ The `tsup.config.ts` entry points map to Chrome and Firefox-specific wrappers (`
 
 ## Git Commits
 
+- **Commit as the repository owner, never as an AI agent or assistant.** Use the user's Git identity — currently `Ilyes Hernandez <hdz.ilyes@gmail.com>` — for author and committer. Never use `Junie`, an AI assistant, a placeholder, or any other agent identity, and do not override it with `--author` or environment variables.
+- Before committing, verify `git config user.name` and `git config user.email` match the repository owner. If they do not, fix the configuration or stop and ask the user instead of committing under the wrong identity.
 - **Never use co-author trailers.** Do not append `Co-authored-by` or any similar trailer to commit messages.
 - When committing changes, always use [Conventional Commits](https://www.conventionalcommits.org/) format (e.g. `feat: add plugin export`, `fix: handle missing theme`, `chore: update deps`).
 - Commit and push directly to the branch. Do not create pull requests, branches for review, or any other PR-related workflow.
