@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.4.1
+
+[compare changes](https://github.com/yapmod/web/compare/v1.0.0...v1.4.1)
+
+### 🩹 Fixes
+
+- Upgrade @yapmod/builder to 1.3.0 for getYapmodGlobalPlugin ([567e3b7](https://github.com/yapmod/web/commit/567e3b7))
+- **ci:** Repair release workflow and sync manifest versions ([3127edc](https://github.com/yapmod/web/commit/3127edc))
+
+### ❤️ Contributors
+
+- Junie <junie@jetbrains.com>
+
 ## [Unreleased]
 
 ### Added
