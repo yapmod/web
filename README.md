@@ -6,6 +6,7 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL%20v3-blue" alt="GPL v3 license" /></a>
     <a href="https://github.com/yapmod/web/releases/latest/download/chrome.zip"><img src="https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4" alt="Download for Chrome (Manifest V3)" /></a>
     <a href="https://github.com/yapmod/web/releases/latest/download/firefox.zip"><img src="https://img.shields.io/badge/Firefox-WebExtension-FF7139" alt="Download for Firefox" /></a>
+    <a href="https://github.com/yapmod/web/releases"><img src="https://img.shields.io/github/downloads/yapmod/web/total" alt="Total release asset downloads" /></a>
   </p>
 </div>
 
